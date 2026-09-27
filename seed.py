@@ -1,6 +1,6 @@
 from app import create_app
 from app.extensions import db
-from app.models import Department, User, Asset, Ticket
+from app.models import Asset, Department, Ticket, TicketHistory, User
 
 
 app = create_app()
@@ -53,6 +53,11 @@ def seed_data():
             department_id=it.id,
         )
         db.session.add_all([ticket1, ticket2])
+        db.session.commit()
+
+        history1 = TicketHistory(ticket_id=ticket1.id, changed_by=employee.id, field_changed="status", old_value="open", new_value="in_progress")
+        history2 = TicketHistory(ticket_id=ticket2.id, changed_by=tech.id, field_changed="assigned_to", old_value=None, new_value=str(tech.id))
+        db.session.add_all([history1, history2])
         db.session.commit()
 
         print("Sample data seeded successfully.")

@@ -1,4 +1,4 @@
-from marshmallow import fields
+from marshmallow import fields, validate
 
 from app.extensions import ma
 from app.models import Department
@@ -10,6 +10,16 @@ class DepartmentSchema(ma.SQLAlchemySchema):
         load_instance = True
 
     id = ma.auto_field()
-    name = ma.auto_field(required=True)
-    description = fields.String(required=False, allow_none=True)
+    name = fields.String(required=True, validate=validate.Length(min=2, max=100))
+    description = fields.String(required=False, allow_none=True, validate=validate.Length(max=500))
     created_at = ma.auto_field(dump_only=True)
+
+
+class DepartmentCreateSchema(ma.Schema):
+    name = fields.String(required=True, validate=validate.Length(min=2, max=100))
+    description = fields.String(allow_none=True, validate=validate.Length(max=500))
+
+
+class DepartmentUpdateSchema(ma.Schema):
+    name = fields.String(validate=validate.Length(min=2, max=100))
+    description = fields.String(allow_none=True, validate=validate.Length(max=500))

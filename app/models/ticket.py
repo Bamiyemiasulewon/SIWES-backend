@@ -23,3 +23,4 @@ class Ticket(db.Model):
     assignee = db.relationship("User", foreign_keys=[assigned_to], back_populates="assigned_tickets")
     asset = db.relationship("Asset", back_populates="tickets")
     department = db.relationship("Department", back_populates="tickets")
+    history = db.relationship("TicketHistory", back_populates="ticket", cascade="all, delete-orphan")

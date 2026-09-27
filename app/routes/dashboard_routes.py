@@ -1,8 +1,9 @@
 from collections import Counter
 from datetime import datetime
 
-from flask import Blueprint, jsonify
+from flask import jsonify
 from flask_jwt_extended import jwt_required, current_user
+from flask_smorest import Blueprint
 
 from app.models import Ticket, Asset, User
 
