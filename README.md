@@ -1,6 +1,6 @@
-# Smart IT Helpdesk Backend
+# Smart Campus Service Desk Backend
 
-This backend replaces the company’s Excel-based IT ticket workflow with a Flask API for employees, technicians, and administrators. It supports JWT login, role-based access control, asset tracking, ticket assignment, audit history, and Swagger documentation.
+This backend supports the School of Computing service desk workflow for students and staff. It handles maintenance requests, complaints, department-based complaint routing, anonymous complaint submission, identity reveal logging, officer assignment, and dashboard analytics. The project retains the original Flask structure while adapting the legacy ticketing logic to the new campus service domain.
 
 ## Stack
 
@@ -59,7 +59,7 @@ This backend replaces the company’s Excel-based IT ticket workflow with a Flas
    flask --app run.py db upgrade
    ```
 
-5. Seed sample data for manual Postman/Swagger testing:
+5. Seed sample data for manual testing:
 
    ```bash
    python seed.py
@@ -83,24 +83,39 @@ This backend replaces the company’s Excel-based IT ticket workflow with a Flas
 - `POST /auth/login`
 - `GET /auth/me`
 
-JWT bearer tokens are required for protected routes. Passwords are hashed and never returned in API responses.
+Students can register with their matriculation number, level, and department. Roles are enforced server-side and cannot be escalated by the client.
 
 ## Role model
 
-- Employee: create tickets and manage only their own tickets
-- Technician: view and update assigned tickets, change ticket status, and assign work
-- Admin: full CRUD access across users, departments, assets, and tickets
+- Student: create and monitor their own requests
+- Staff: create and monitor their own requests, with restrictions on maintenance submissions
+- Maintenance officer: view and resolve maintenance requests assigned to them
+- Complaint officer: manage complaint requests by scope (department, bursary, or general)
+- Admin: full system access to users, departments, assets, complaints, and audits
 
 ## Main API routes
 
 - Users: `/users`
 - Departments: `/departments`
 - Assets: `/assets`
-- Tickets: `/tickets`
-- Ticket status: `/tickets/<id>/status`
-- Ticket assignment: `/tickets/<id>/assign`
-- Ticket history: `/tickets/<id>/history`
-- Dashboard: `/dashboard/technician`, `/dashboard/executive`, `/dashboard/assets`
+- Requests: `/requests`
+- Legacy compatibility: `/tickets`
+- Request status: `/requests/<id>/status`
+- Request assignment: `/requests/<id>/assign`
+- Request history: `/requests/<id>/history`
+- Flagging: `/requests/<id>/flag`, `/requests/<id>/unflag`
+- Identity reveal logs: `/requests/<id>/reveal-identity`, `/requests/identity-reveals`
+- Dashboard: `/dashboard/student`, `/dashboard/officer`, `/dashboard/admin`, `/dashboard/assets`
+
+## Business rules
+
+- Maintenance requests require a building and room.
+- Electrical maintenance requests require high or critical priority.
+- Students and staff can only edit requests still in the `submitted` state.
+- Requests move through a strict lifecycle: `submitted -> assigned -> in_progress -> resolved -> reopened -> in_progress -> resolved -> closed`.
+- Anonymous complaints hide the creator from non-admin viewers.
+- Admin approval is required to reveal an anonymous complaint’s identity.
+- Officer scopes control complaint visibility and routing.
 
 ## Filtering and pagination
 
@@ -109,6 +124,8 @@ List endpoints support filters such as:
 - `?status=`
 - `?priority=`
 - `?department_id=`
+- `?assigned_to=`
+- `?is_flagged=`
 - `?page=`
 - `?per_page=`
 
@@ -120,20 +137,19 @@ OpenAPI docs are available at:
 - `/docs/redoc`
 - `/docs/openapi.json`
 
-Use the Swagger UI at `/docs/swagger-ui` for interactive testing with Postman-style request payloads.
-
 ## Testing
 
-Run the security and validation test suite with:
+Run the test suite with:
 
 ```bash
-pytest -q tests/test_auth.py
+pytest -q
 ```
 
-The tests cover unauthorized access, JWT expiry and tampering, role escalation prevention, and validation edge cases such as malformed or malicious payloads.
+The current suite covers authentication, authorization, JWT validation, role escape prevention, and malicious input handling.
 
 ## Notes
 
 - All write operations use Marshmallow validation.
-- Ticket status and assignment changes are automatically recorded in `TicketHistory`.
+- Request lifecycle changes are recorded in `RequestHistory`.
+- Flagging and identity reveal actions are audited for admin review.
 - Error responses follow a consistent JSON format with `status_code`, `message`, and `error` fields.
