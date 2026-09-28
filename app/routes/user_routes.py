@@ -21,8 +21,8 @@ def require_admin():
 @user_bp.route("", methods=["GET"])
 @jwt_required()
 def list_users():
-    if current_user.role not in {"admin", "technician"}:
-        return json_error(403, "forbidden", "Access denied")
+    if current_user.role != "admin":
+        return json_error(403, "forbidden", "Admin access required")
 
     query = User.query
     if request.args.get("department_id"):
@@ -68,11 +68,18 @@ def create_user():
     if payload.get("department_id") and not db.session.get(Department, payload["department_id"]):
         return json_error(404, "not_found", "Department not found")
 
+    role = payload.get("role") or "staff"
+    if role not in {"student", "staff", "maintenance_officer", "complaint_officer", "admin"}:
+        return json_error(400, "validation_error", "Invalid role", {"role": ["Unsupported role"]})
+
     user = User(
         name=payload["name"].strip(),
         email=email,
-        role=payload.get("role", "employee"),
+        role=role,
         department_id=payload.get("department_id"),
+        matric_number=payload.get("matric_number"),
+        level=payload.get("level"),
+        officer_scope=payload.get("officer_scope"),
     )
     user.password = payload.get("password")
     db.session.add(user)

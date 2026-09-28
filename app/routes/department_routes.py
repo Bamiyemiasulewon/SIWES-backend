@@ -4,8 +4,8 @@ from flask_smorest import Blueprint
 from marshmallow import ValidationError
 
 from app.extensions import db
-from app.models import Department
-from app.schemas import DepartmentCreateSchema, DepartmentUpdateSchema, DepartmentSchema
+from app.models import Department, Request, User
+from app.schemas import DepartmentCreateSchema, DepartmentSchema, DepartmentUpdateSchema
 from app.utils.helpers import json_error, paginate_query
 
 
@@ -14,13 +14,12 @@ department_schema = DepartmentSchema()
 
 
 @department_bp.route("", methods=["GET"])
-@jwt_required()
-def list_departments():
-    if current_user.role not in {"admin", "technician", "employee"}:
-        return json_error(403, "forbidden", "Access denied")
-    paginated = paginate_query(Department.query)
+def list_departments_public():
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+    paginated = Department.query.paginate(page=page, per_page=per_page, error_out=False)
     return {
-        "items": [department_schema.dump(item) for item in paginated.items],
+        "items": [{"id": dept.id, "name": dept.name} for dept in paginated.items],
         "page": paginated.page,
         "pages": paginated.pages,
         "total": paginated.total,
@@ -91,6 +90,8 @@ def delete_department(department_id):
     dept = db.session.get(Department, department_id)
     if not dept:
         return json_error(404, "not_found", "Department not found")
+    if User.query.filter_by(department_id=dept.id).first() or Request.query.filter_by(department_id=dept.id).first():
+        return json_error(409, "conflict", "Department cannot be deleted because it has users or requests")
     db.session.delete(dept)
     db.session.commit()
     return {"message": "Department deleted"}

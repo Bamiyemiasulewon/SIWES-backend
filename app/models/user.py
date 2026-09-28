@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import Enum
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db
 
@@ -12,14 +13,18 @@ class User(db.Model):
     name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), nullable=False, unique=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(50), nullable=False, default="employee")
+    role = db.Column(db.String(50), nullable=False, default="student")
     department_id = db.Column(db.Integer, db.ForeignKey("departments.id"), nullable=True)
+    matric_number = db.Column(db.String(50), nullable=True, unique=True, index=True)
+    level = db.Column(db.Integer, nullable=True)
+    officer_scope = db.Column(Enum("department", "bursary", "general", name="officer_scope_enum", native_enum=False), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     department = db.relationship("Department", back_populates="users")
-    created_tickets = db.relationship("Ticket", foreign_keys="Ticket.created_by", back_populates="creator")
-    assigned_tickets = db.relationship("Ticket", foreign_keys="Ticket.assigned_to", back_populates="assignee")
+    created_requests = db.relationship("Request", foreign_keys="Request.created_by", back_populates="creator")
+    assigned_requests = db.relationship("Request", foreign_keys="Request.assigned_to", back_populates="assignee")
     assets = db.relationship("Asset", back_populates="assigned_user")
+    reveal_logs = db.relationship("IdentityRevealLog", back_populates="admin")
 
     @property
     def password(self):
@@ -39,5 +44,8 @@ class User(db.Model):
             "email": self.email,
             "role": self.role,
             "department_id": self.department_id,
+            "matric_number": self.matric_number,
+            "level": self.level,
+            "officer_scope": self.officer_scope,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

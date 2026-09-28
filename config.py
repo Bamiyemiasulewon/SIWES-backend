@@ -10,9 +10,10 @@ load_dotenv(dotenv_path=ENV_FILE, override=False)
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
+    default_db_path = Path(__file__).resolve().parent / "smart_campus.db"
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg2://postgres:postgres@localhost:5432/smart_it_helpdesk",
+        f"sqlite:///{default_db_path}",
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "this-is-a-very-long-jwt-secret-key-for-test-usage")

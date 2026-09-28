@@ -1,4 +1,7 @@
+import os
+
 from flask import Flask, jsonify, redirect, render_template_string
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_smorest import Api
 from marshmallow import ValidationError
@@ -10,6 +13,15 @@ from .extensions import db, jwt, ma, migrate
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
+
+    origins = app.config.get("CORS_ORIGINS", "http://localhost:5173")
+    CORS(
+        app,
+        resources={r"/*": {"origins": [origin.strip() for origin in origins.split(",") if origin.strip()]}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    )
 
     db.init_app(app)
     ma.init_app(app)
@@ -74,7 +86,7 @@ def create_app(config_object=Config):
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Smart IT Helpdesk API Docs</title>
+            <title>Smart Campus Service Desk API Docs</title>
             <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
             <style>
                 body { margin: 0; background: #f5f7fb; }
